@@ -1,0 +1,18 @@
+{
+  "name": "find-rosenka",
+  "version": "0.1.0",
+  "description": "A puppeteer usage example.",
+  "main": "index.js",
+  "scripts": {
+    "debug": "DEBUG=true node index.js",
+    "start": "node index.js",
+    "format": "prettier --write ."
+  },
+  "private": true,
+  "dependencies": {
+    "puppeteer": "^4.0.0"
+  },
+  "devDependencies": {
+    "prettier": "2.0.5"
+  }
+}
