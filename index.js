@@ -11,6 +11,8 @@ const ROSENKA_TOP_URL = "https://www.rosenka.nta.go.jp/";
  */
 const findRosenka = async (input, opt) => {
   console.log(`Started findRosenka with input: ${input}`);
+  input = replaceNumsWithHalfSize(input);
+  console.log(`Replaced nums with half size: ${input}`);
   let browser;
   try {
     browser = await puppeteer.launch(opt);
@@ -21,12 +23,12 @@ const findRosenka = async (input, opt) => {
     // Select Prefecture
     const prefectureLinks = await page.evaluate(generateLinks);
     const prefecture = prefectureLinks.find(({ text }) =>
-      input.startsWith(text)
+      input.startsWith(replaceNumsWithHalfSize(text))
     );
     console.log(`selected prefecture: ${JSON.stringify(prefecture)}`);
     await page.goto(prefecture.link);
     console.log(`Successfully moved to ${prefecture.link}`);
-    input = input.replace(prefecture.text, "");
+    input = input.replace(replaceNumsWithHalfSize(prefecture.text), "");
 
     // Go to Rosenka page
     const linksInPref = await page.evaluate(generateLinks);
@@ -35,18 +37,28 @@ const findRosenka = async (input, opt) => {
     console.log(`Successfully moved to ${prefTop.link}`);
 
     // Select city
+    const largeCitiesArray = await page.evaluate(generateLargeCitiesArray);
+    const cityName = largeCitiesArray.find((text) => input.startsWith(text));
+    if (typeof cityName === "string") {
+      console.log(`Directly go to more detailed city in ${cityName}`);
+      input = input.replace(cityName, "");
+    }
     const cityLinks = await page.evaluate(generateLinks);
-    const city = cityLinks.find(({ text }) => input.startsWith(text));
+    const city = cityLinks.find(({ text }) =>
+      input.startsWith(replaceNumsWithHalfSize(text))
+    );
     console.log(`selected city: ${JSON.stringify(city)}`);
     await page.goto(city.link);
     console.log(`Successfully moved to ${city.link}`);
-    input = input.replace(city.text, "");
+    input = input.replace(replaceNumsWithHalfSize(city.text), "");
 
     // Save PDFs
     const placeLinks = await page.evaluate(generatePlaceLinks);
-    const placeLink = placeLinks.find(({ text }) => input.startsWith(text));
+    const placeLink = placeLinks.find(({ text }) =>
+      input.startsWith(replaceNumsWithHalfSize(text))
+    );
     console.log(`selected place: ${JSON.stringify(placeLink)}`);
-    input = input.replace(placeLink.text, "");
+    input = input.replace(replaceNumsWithHalfSize(placeLink.text), "");
     const promises = placeLink.links.map(async ({ text, link }) => {
       const newPage = await browser.newPage();
       await newPage.goto(link);
@@ -71,15 +83,25 @@ const findRosenka = async (input, opt) => {
 
 const generateLinks = () => {
   const links = [];
-  const tags = document.getElementsByTagName("a");
-  for (let i = 0; i < tags.length; i++) {
-    const element = tags[i];
+  const aTags = document.getElementsByTagName("a");
+  for (let i = 0; i < aTags.length; i++) {
+    const element = aTags[i];
     links.push({
       text: element.text,
       link: element.href,
     });
   }
   return links;
+};
+
+const generateLargeCitiesArray = () => {
+  const arr = [];
+  const elements = document.getElementsByClassName("seirei");
+  for (let i = 0; i < elements.length; i++) {
+    const element = elements[i];
+    arr.push(element.innerText);
+  }
+  return arr;
 };
 
 const generatePlaceLinks = () => {
@@ -110,6 +132,16 @@ const generatePlaceLinks = () => {
   }
 
   return links;
+};
+
+/**
+ * @param {string} originalString - a string which may contain full width numbers
+ * @return {string}
+ */
+const replaceNumsWithHalfSize = (originalString) => {
+  return originalString.replace(/[０-９]/g, (s) => {
+    return String.fromCharCode(s.charCodeAt(0) - 65248);
+  });
 };
 
 /**

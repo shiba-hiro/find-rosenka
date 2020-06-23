@@ -4,8 +4,9 @@
   "description": "A puppeteer usage example.",
   "main": "index.js",
   "scripts": {
-    "debug": "DEBUG=true node index.js",
-    "start": "node index.js",
+    "debug": "yarn clean && DEBUG=true node index.js",
+    "start": "yarn clean && node index.js",
+    "clean": "rm -f ./output/*.pdf",
     "format": "prettier --write ."
   },
   "private": true,
